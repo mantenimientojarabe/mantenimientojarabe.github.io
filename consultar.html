@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultar</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: url('img/7.png');
+            background-size: cover;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .search-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        #searchInput {
+            padding: 10px;
+            font-size: 16px;
+            flex: 1;
+            min-width: 200px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #searchButton {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #searchButton:hover {
+            background-color: #218838;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .edit-button, .save-button, .btn-danger {
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            font-size: 14px;
+            margin: 2px;
+            transition: background-color 0.3s;
+        }
+
+        .edit-button {
+            background-color: #ffc107;
+        }
+
+        .edit-button:hover {
+            background-color: #e0a800;
+        }
+
+        .save-button {
+            background-color: #28a745;
+        }
+
+        .save-button:hover {
+            background-color: #218838;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        #chartContainer {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 14px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            display: none;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .notification.success {
+            background-color: #28a745;
+        }
+
+        .notification.error {
+            background-color: #dc3545;
+        }
+
+        .confirmation-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .confirmation-dialog p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .confirmation-dialog button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .confirmation-dialog button#confirmYes {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .confirmation-dialog button#confirmYes:hover {
+            background-color: #218838;
+        }
+
+        .confirmation-dialog button#confirmNo {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .confirmation-dialog button#confirmNo:hover {
+            background-color: #c82333;
+        }
+
+        @media (max-width: 600px) {
+            #searchButton {
+                width: 100%;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .edit-button, .save-button, .btn-danger {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Buscar...">
+            <button id="searchButton">Buscar</button>
+        </div>
+        <div class="container" id="tableContainer">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Fecha inicial</th>
+                        <th>Descripción</th>
+                        <th>Tanque</th>
+                        <th>Área</th>
+                        <th>Fecha final</th>
+                        <th>Total</th>
+                        <th>Editar</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla"></tbody>
+            </table>
+        </div>
+        <div class="container" id="chartContainer">
+            <canvas id="totalChart"></canvas>
+        </div>
+    </main>
+    <footer>
+        © 2025 Página para almacenar datos de mantenimiento de Jarabe Nixapa.
+    </footer>
+
+    <!-- Notificación -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Diálogo de confirmación -->
+    <div id="confirmationDialog" class="confirmation-dialog">
+        <p>¿Estás seguro de que deseas eliminar este registro?</p>
+        <button type="button" id="confirmYes">Sí</button>
+        <button type="button" id="confirmNo">No</button>
+    </div>
+
+    <script src="app2.js"></script>
+</body>
+</html>
